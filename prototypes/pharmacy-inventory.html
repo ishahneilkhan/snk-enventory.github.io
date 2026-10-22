@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ফার্মেসি ইনভেন্টরি (প্রোটোটাইপ)</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f6f5;--card:#fff;--ink:#14282a;--mute:#5d7274;--line:#dbe4e2;--brand:#0f6b63;--brand-ink:#fff;--warn:#b45309;--warnbg:#fef3c7;--bad:#b42318;--badbg:#fee4e2;--ok:#157347;--okbg:#dcf5e7;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1a1b;--card:#162526;--ink:#e6f0ee;--mute:#92aaa8;--line:#274142;--brand:#3fb5a8;--brand-ink:#06201d;--warn:#fbbf24;--warnbg:#3a2c0a;--bad:#ff8a80;--badbg:#3d1714;--ok:#6ee7a0;--okbg:#10301f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1a1b;--card:#162526;--ink:#e6f0ee;--mute:#92aaa8;--line:#274142;--brand:#3fb5a8;--brand-ink:#06201d;--warn:#fbbf24;--warnbg:#3a2c0a;--bad:#ff8a80;--badbg:#3d1714;--ok:#6ee7a0;--okbg:#10301f;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Hind Siliguri",system-ui,sans-serif}
+header{background:var(--brand);color:var(--brand-ink);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+header h1{font-size:19px;margin:0}
+header small{opacity:.85}
+nav{display:flex;gap:4px;overflow-x:auto;padding:8px 10px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+nav button{flex:none;border:0;background:none;color:var(--mute);font:inherit;font-weight:500;padding:8px 14px;border-radius:8px;cursor:pointer}
+nav button.on{background:var(--brand);color:var(--brand-ink)}
+main{max-width:980px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+h2{font-size:17px;margin:0 0 10px}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.stat{padding:12px;border:1px solid var(--line);border-radius:8px}
+.stat b{display:block;font-size:24px}
+.stat span{color:var(--mute);font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+label{display:flex;flex-direction:column;font-size:13px;color:var(--mute);gap:2px;flex:1;min-width:120px}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
+.btn{border:0;background:var(--brand);color:var(--brand-ink);font:inherit;font-weight:600;padding:9px 16px;border-radius:8px;cursor:pointer}
+.btn.alt{background:none;border:1px solid var(--line);color:var(--ink)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mute);font-weight:500;font-size:13px}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:13px;font-weight:500}
+.tag.w{background:var(--warnbg);color:var(--warn)}.tag.b{background:var(--badbg);color:var(--bad)}.tag.g{background:var(--okbg);color:var(--ok)}
+.r{text-align:right}
+.total{font-size:22px;font-weight:700}
+.note{color:var(--mute);font-size:14px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+#toast.on{opacity:1}
+@media print{body *{visibility:hidden}#rc,#rc *{visibility:visible}#rc{position:absolute;left:0;top:0;width:100%;border:0}.noprint{display:none}}
+</style>
+</head>
+<body>
+<header><h1>ফার্মেসি ইনভেন্টরি</h1><small>প্রোটোটাইপ, নমুনা ডাটা</small></header>
+<nav id="nav"></nav>
+<main id="app"></main>
+<div id="toast"></div>
+<script>
+const KEY='pharm_proto_v2';
+const D=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const seed=()=>({
+ products:[
+  {id:1,name:'নাপা ৫০০ মিগ্রা',generic:'প্যারাসিটামল',company:'বেক্সিমকো',unit:'স্ট্রিপ',per:10,min:20},
+  {id:2,name:'সেকলো ২০ মিগ্রা',generic:'ওমিপ্রাজল',company:'স্কয়ার',unit:'স্ট্রিপ',per:10,min:15},
+  {id:3,name:'এইস সিরাপ',generic:'প্যারাসিটামল',company:'স্কয়ার',unit:'বোতল',min:10},
+  {id:4,name:'ফেক্সো ১২০',generic:'ফেক্সোফেনাডিন',company:'স্কয়ার',unit:'স্ট্রিপ',per:10,min:12}],
+ batches:[
+  {id:1,pid:1,no:'N-2401',exp:D(40),cost:8,price:10,qty:600},
+  {id:2,pid:1,no:'N-2511',exp:D(400),cost:8.5,price:10,qty:1200},
+  {id:3,pid:2,no:'S-118',exp:D(-12),cost:5,price:7,qty:300},
+  {id:4,pid:2,no:'S-205',exp:D(200),cost:5.5,price:7,qty:120},
+  {id:5,pid:3,no:'A-77',exp:D(75),cost:45,price:60,qty:8},
+  {id:6,pid:4,no:'F-310',exp:D(300),cost:11,price:15,qty:500}],
+ customers:[{id:1,name:'রহিম সাহেব',phone:'01711000000',due:450},{id:2,name:'করিমা বেগম',phone:'01811000000',due:0}],
+ suppliers:[{id:1,name:'আলম ট্রেডার্স',phone:'01911000000',due:3200},{id:2,name:'মা ফার্মা',phone:'01611000000',due:0}],
+ sales:[],nid:100});
+let S;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!S||!S.products)S=seed();
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const nid=()=>S.nid++;
+const bn=n=>Number(n||0).toLocaleString('bn-BD',{maximumFractionDigits:1});
+const tk=n=>'৳'+bn(n);
+const today=()=>new Date().toISOString().slice(0,10);
+const days=e=>Math.round((new Date(e)-new Date(today()))/864e5);
+const P=id=>S.products.find(p=>p.id==id);
+const live=pid=>S.batches.filter(b=>b.pid==pid&&b.qty>0&&days(b.exp)>=0).sort((a,b)=>a.exp.localeCompare(b.exp));
+const stock=pid=>live(pid).reduce((s,b)=>s+b.qty,0);
+const per=pid=>(P(pid)||{}).per||1;
+const fq=(pid,n)=>{const k=per(pid);if(k==1)return bn(n)+' '+P(pid).unit;const s=Math.floor(n/k),r=n%k;return (s?bn(s)+' স্ট্রিপ':'')+(s&&r?' ':'')+(r?bn(r)+' পিস':'')||'০'};
+const expTag=e=>{const d=days(e);return d<0?'<span class="tag b">মেয়াদোত্তীর্ণ</span>':d<=90?`<span class="tag w">${bn(d)} দিন বাকি</span>`:'<span class="tag g">ঠিক আছে</span>'};
+const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2200)};
+const opts=(arr,f)=>arr.map(x=>`<option value="${x.id}">${f(x)}</option>`).join('');
+const val=id=>document.getElementById(id).value;
+let tab='dash',cart=[],lastBill=null,editP=null,editB=null;
+const tabs=[['dash','ড্যাশবোর্ড'],['pos','বিক্রি'],['buy','মাল কেনা'],['prod','পণ্য'],['due','বাকির খাতা'],['rep','রিপোর্ট']];
+function go(t){tab=t;render()}
+function render(){
+ if(role!='owner'&&!['pos','prod','due'].includes(tab))tab='pos';
+ document.getElementById('nav').innerHTML=tabs.filter(t=>role=='owner'||['pos','prod','due'].includes(t[0])).map(([k,v])=>`<button class="${k==tab?'on':''}" onclick="go('${k}')">${v}</button>`).join('');
+ document.getElementById('app').innerHTML=roleBar()+({dash,pos,buy,prod,due,rep})[tab]();
+ save();
+}
+let role='owner',askPin=false;
+function roleBar(){
+ const st='align-items:center;justify-content:space-between';
+ if(role=='owner')return `<div class="card row noprint" style="${st}"><span>ভূমিকা: <b>মালিক</b> (সব দেখা ও করা যায়)</span><button class="btn alt" onclick="role='sales';askPin=false;render()">সেলসম্যান মোডে যান</button></div>`;
+ return `<div class="card row noprint" style="${st}"><span>ভূমিকা: <b>সেলসম্যান</b> (শুধু বিক্রি, স্টক দেখা, বাকি জমা)</span>${askPin?`<span class="row" style="flex-wrap:nowrap"><input id="pin" type="password" inputmode="numeric" placeholder="PIN (১২৩৪)" style="width:130px"><button class="btn" onclick="tryPin()">নিশ্চিত</button></span>`:`<button class="btn alt" onclick="askPin=true;render()">মালিক মোডে যান</button>`}</div>`;
+}
+function tryPin(){if(val('pin')=='1234'){role='owner';askPin=false;toast('মালিক মোড চালু')}else toast('PIN ভুল');render()}
+function prodView(){
+ return `<div class="card"><h2>স্টক দেখা</h2><div class="tw"><table><tr><th>নাম</th><th>জেনেরিক</th><th>কোম্পানি</th><th class="r">স্টক</th><th>সবচেয়ে কাছের মেয়াদ</th></tr>${S.products.map(p=>{const l=live(p.id)[0];return `<tr><td>${p.name}</td><td>${p.generic}</td><td>${p.company}</td><td class="r">${fq(p.id,stock(p.id))}</td><td>${l?l.exp+' '+expTag(l.exp):'<span class="tag b">স্টক নেই</span>'}</td></tr>`}).join('')}</table></div></div>`;
+}
+function dash(){
+ const ts=S.sales.filter(s=>s.date==today());
+ const low=S.products.filter(p=>stock(p.id)<=p.min*per(p.id));
+ const soon=S.batches.filter(b=>b.qty>0&&days(b.exp)>=0&&days(b.exp)<=90);
+ const exp=S.batches.filter(b=>b.qty>0&&days(b.exp)<0);
+ return `<div class="grid" style="margin-bottom:14px">
+ <div class="stat"><b>${tk(ts.reduce((a,s)=>a+s.total,0))}</b><span>আজকের বিক্রি</span></div>
+ <div class="stat"><b>${bn(low.length)}</b><span>স্টক কম পণ্য</span></div>
+ <div class="stat"><b>${bn(soon.length)}</b><span>৯০ দিনের মধ্যে মেয়াদ শেষ</span></div>
+ <div class="stat"><b>${bn(exp.length)}</b><span>মেয়াদোত্তীর্ণ ব্যাচ</span></div></div>
+ <div class="card"><h2>মেয়াদ শেষ হতে যাচ্ছে বা হয়ে গেছে</h2>${batchTable(S.batches.filter(b=>b.qty>0&&days(b.exp)<=90).sort((a,b)=>a.exp.localeCompare(b.exp)))}</div>
+ <div class="card"><h2>স্টক কম</h2>${low.length?`<div class="tw"><table><tr><th>পণ্য</th><th class="r">আছে</th><th class="r">সর্বনিম্ন</th><th class="r">অর্ডার করুন</th></tr>${low.map(p=>`<tr><td>${p.name}</td><td class="r">${fq(p.id,stock(p.id))}</td><td class="r">${bn(p.min)} ${p.unit}</td><td class="r"><b>${bn(Math.ceil((p.min*2*per(p.id)-stock(p.id))/per(p.id)))} ${p.unit}</b></td></tr>`).join('')}</table></div>`:'<p class="note">সব পণ্যের স্টক ঠিক আছে।</p>'}</div>`;
+}
+function batchTable(bs){
+ if(!bs.length)return '<p class="note">কিছু নেই।</p>';
+ return `<div class="tw"><table><tr><th>পণ্য</th><th>ব্যাচ</th><th>মেয়াদ</th><th class="r">পরিমাণ</th><th></th></tr>${bs.map(b=>`<tr><td>${P(b.pid).name}</td><td>${b.no}</td><td>${b.exp}</td><td class="r">${fq(b.pid,b.qty)}</td><td>${expTag(b.exp)}</td></tr>`).join('')}</table></div>`;
+}
+function pos(){
+ const sel=S.products.filter(p=>stock(p.id)>0);
+ const total=cart.reduce((a,c)=>a+c.qty*c.price,0);
+ return receipt()+`<div class="card"><h2>নতুন বিল</h2><div class="row">
+ <label>পণ্য<select id="pp">${opts(sel,p=>`${p.name} (আছে ${fq(p.id,stock(p.id))})`)}</select></label>
+ <label>পরিমাণ<input id="pq" type="number" min="1" value="1"></label>
+ <label>একক<select id="pu"><option value="s">স্ট্রিপ / বোতল</option><option value="p">পিস</option></select></label>
+ <button class="btn" onclick="addCart()">যোগ করুন</button></div></div>
+ <div class="card"><h2>বিলের তালিকা</h2>${cart.length?`<div class="tw"><table><tr><th>পণ্য</th><th class="r">পরিমাণ</th><th class="r">দাম</th><th class="r">মোট</th><th></th></tr>${cart.map((c,i)=>`<tr><td>${P(c.pid).name}</td><td class="r">${fq(c.pid,c.qty)}</td><td class="r">${tk(c.price)}/${per(c.pid)>1?'পিস':P(c.pid).unit}</td><td class="r">${tk(c.qty*c.price)}</td><td><button class="btn alt" onclick="cart.splice(${i},1);render()">বাদ দিন</button></td></tr>`).join('')}</table></div>
+ <p class="total">মোট: ${tk(total)}</p>
+ <div class="row">${role=='owner'?'<label>ডিসকাউন্ট (৳)<input id="disc" type="number" min="0" value="0"></label>':''}
+ <label>কাস্টমার (বাকির জন্য)<select id="cu"><option value="">সাধারণ কাস্টমার</option>${opts(S.customers,c=>c.name)}</select></label>
+ <label>পেমেন্ট<select id="pay"><option value="cash">নগদ</option><option value="bkash">বিকাশ</option><option value="nagad">নগদ (Nagad)</option><option value="due">বাকি</option></select></label>
+ <button class="btn" onclick="checkout()">বিল করুন</button></div>`:'<p class="note">পণ্য যোগ করে বিল শুরু করুন।</p>'}</div>`;
+}
+function addCart(){
+ const pid=+val('pp'),qty=Math.floor(+val('pq'))*(val('pu')=='p'?1:per(pid));
+ if(!pid||qty<1)return toast('পণ্য ও পরিমাণ দিন');
+ const have=stock(pid)-cart.filter(c=>c.pid==pid).reduce((a,c)=>a+c.qty,0);
+ if(qty>have)return toast('স্টকে মাত্র '+fq(pid,have)+' আছে');
+ const ex=cart.find(c=>c.pid==pid);
+ if(ex)ex.qty+=qty;else cart.push({pid,qty,price:live(pid)[0].price/per(pid)});
+ render();
+}
+function checkout(){
+ const disc=role=='owner'?(+val('disc')||0):0,cu=val('cu'),pay=val('pay');
+ const sub=cart.reduce((a,c)=>a+c.qty*c.price,0),total=Math.max(0,sub-disc);
+ if(pay=='due'&&!cu)return toast('বাকির জন্য কাস্টমার বেছে নিন');
+ let profit=-disc;
+ cart.forEach(c=>{let need=c.qty;for(const b of live(c.pid)){if(!need)break;const t=Math.min(b.qty,need);b.qty-=t;need-=t;profit+=t*(c.price-b.cost/per(c.pid))}});
+ S.sales.unshift({id:nid(),date:today(),items:cart.map(c=>({...c})),total,profit,pay,cu});
+ if(pay=='due')S.customers.find(c=>c.id==cu).due+=total;
+ cart=[];lastBill=S.sales[0];toast('বিল সম্পন্ন: '+tk(total));render();
+}
+function receipt(){
+ if(!lastBill)return '';
+ const b=lastBill,sub=b.items.reduce((a,i)=>a+i.qty*i.price,0);
+ return `<div class="card" id="rc"><h2>রসিদ #${bn(b.id)}</h2><p class="note">${b.date}</p><div class="tw"><table>${b.items.map(i=>`<tr><td>${P(i.pid).name}</td><td class="r">${fq(i.pid,i.qty)}</td><td class="r">${tk(i.qty*i.price)}</td></tr>`).join('')}</table></div>${sub>b.total?`<p>ডিসকাউন্ট: ${tk(sub-b.total)}</p>`:''}<p class="total">মোট: ${tk(b.total)}</p><p class="note">পেমেন্ট: ${{cash:'নগদ',bkash:'বিকাশ',nagad:'নগদ (Nagad)',due:'বাকি'}[b.pay]}</p><div class="row noprint"><button class="btn" onclick="window.print()">রসিদ প্রিন্ট</button><button class="btn alt" onclick="lastBill=null;render()">বন্ধ করুন</button></div></div>`;
+}
+function buy(){
+ return `<div class="card"><h2>মাল কেনা (স্টক ইন)</h2><div class="row">
+ <label>পণ্য<select id="bp">${opts(S.products,p=>p.name)}</select></label>
+ <label>ব্যাচ নম্বর<input id="bn"></label>
+ <label>মেয়াদ<input id="be" type="date"></label>
+ <label>পরিমাণ (স্ট্রিপ বা বোতল)<input id="bq" type="number" min="1"></label>
+ <label>কেনা দাম<input id="bc" type="number" min="0"></label>
+ <label>বিক্রির দাম<input id="bs" type="number" min="0"></label>
+ <label>সাপ্লায়ার<select id="bu">${opts(S.suppliers,s=>s.name)}</select></label>
+ <label>এখন দিলেন (৳)<input id="bd" type="number" min="0" value="0"></label>
+ <button class="btn" onclick="doBuy()">স্টকে তুলুন</button></div>
+ <p class="note">যা দিলেন না, তা সাপ্লায়ারের পাওনায় যোগ হবে।</p></div>`;
+}
+function doBuy(){
+ const pid=+val('bp'),qty=+val('bq'),cost=+val('bc'),price=+val('bs'),exp=val('be'),no=val('bn').trim();
+ if(!no||!exp||qty<1||!cost||!price)return toast('সব ঘর পূরণ করুন');
+ S.batches.push({id:nid(),pid,no,exp,cost,price,qty:qty*per(pid)});
+ S.suppliers.find(s=>s.id==val('bu')).due+=Math.max(0,qty*cost-(+val('bd')||0));
+ toast('স্টকে যোগ হয়েছে');render();
+}
+function prod(){return role=='owner'?prodMain()+batchCard():prodView()}
+function prodMain(){
+ return `<div class="card"><h2>নতুন পণ্য</h2><div class="row">
+ <label>নাম<input id="nn"></label><label>জেনেরিক নাম<input id="ng"></label>
+ <label>কোম্পানি<input id="nc"></label>
+ <label>একক<select id="nu"><option>স্ট্রিপ</option><option>পিস</option><option>বোতল</option><option>বক্স</option></select></label>
+ <label>সর্বনিম্ন স্টক<input id="nm" type="number" value="10"></label>
+ <label>১ স্ট্রিপে কত পিস<input id="np" type="number" min="1" value="10"></label>
+ <button class="btn" onclick="addProd()">যোগ করুন</button></div></div>
+ <div class="card"><h2>পণ্য তালিকা</h2><div class="tw"><table><tr><th>নাম</th><th>জেনেরিক</th><th>কোম্পানি</th><th class="r">স্টক</th><th>সবচেয়ে কাছের মেয়াদ</th><th></th></tr>
+ ${S.products.map(p=>{const l=live(p.id)[0];if(editP==p.id)return prodEdit(p);return `<tr><td>${p.name}</td><td>${p.generic}</td><td>${p.company}</td><td class="r">${fq(p.id,stock(p.id))}</td><td>${l?l.exp+' ':''}${l?expTag(l.exp):'<span class="tag b">স্টক নেই</span>'}</td><td><button class="btn alt" onclick="editP=${p.id};render()">এডিট</button></td></tr>`}).join('')}</table></div></div>`;
+}
+const esc=s=>String(s==null?'':s).replace(/"/g,'&quot;');
+function prodEdit(p){
+ return `<tr><td><input id="en" value="${esc(p.name)}"></td><td><input id="eg" value="${esc(p.generic)}"></td><td><input id="ec" value="${esc(p.company)}"></td><td colspan="2"><label>সর্বনিম্ন স্টক<input id="em" type="number" value="${p.min}"></label></td><td><div class="row" style="flex-wrap:nowrap"><button class="btn" onclick="saveProd(${p.id})">সেভ</button><button class="btn alt" onclick="editP=null;render()">বাতিল</button><button class="btn alt" onclick="delProd(${p.id})">মুছুন</button></div></td></tr>`;
+}
+function saveProd(id){const p=P(id),n=val('en').trim();if(!n)return toast('নাম দিন');p.name=n;p.generic=val('eg');p.company=val('ec');p.min=+val('em')||0;editP=null;toast('সেভ হয়েছে');render()}
+function delProd(id){
+ if(S.batches.some(b=>b.pid==id&&b.qty>0))return toast('স্টকে মাল আছে, আগে স্টক শূন্য করুন');
+ if(S.sales.some(s=>s.items.some(i=>i.pid==id)))return toast('এই পণ্যের বিক্রি আছে, মোছা যাবে না');
+ S.batches=S.batches.filter(b=>b.pid!=id);S.products=S.products.filter(p=>p.id!=id);S.adj=(S.adj||[]).filter(a=>a.pid!=id);
+ editP=null;toast('মোছা হয়েছে');render();
+}
+function batchCard(){
+ const bs=[...S.batches].sort((a,b)=>P(a.pid).name.localeCompare(P(b.pid).name,'bn')||a.exp.localeCompare(b.exp));
+ const adj=(S.adj||[]).slice(0,5);
+ return `<div class="card"><h2>ব্যাচ ও স্টক সংশোধন</h2><div class="tw"><table><tr><th>পণ্য</th><th>ব্যাচ</th><th>মেয়াদ</th><th class="r">স্টক</th><th></th></tr>${bs.map(b=>editB==b.id?`<tr><td>${P(b.pid).name}</td><td><input id="xb" value="${esc(b.no)}"></td><td><input id="xe" type="date" value="${b.exp}"></td><td><input id="xq" type="number" min="0" value="${b.qty}"></td><td><div class="row" style="flex-wrap:nowrap"><button class="btn" onclick="saveBatch(${b.id})">সেভ</button><button class="btn alt" onclick="editB=null;render()">বাতিল</button></div></td></tr>`:`<tr><td>${P(b.pid).name}</td><td>${b.no}</td><td>${b.exp} ${expTag(b.exp)}</td><td class="r">${fq(b.pid,b.qty)}</td><td><button class="btn alt" onclick="editB=${b.id};render()">সংশোধন</button></td></tr>`).join('')}</table></div><p class="note">সংশোধনে স্টক পিসের হিসাবে লিখুন। ভুল ব্যাচ বাদ দিতে স্টক ০ করুন। স্টক বদলালে নিচে হিসাব জমা থাকে।</p>${adj.length?`<div class="tw"><table><tr><th>তারিখ</th><th>পণ্য</th><th>স্টক বদল</th></tr>${adj.map(a=>`<tr><td>${a.date}</td><td>${P(a.pid).name}</td><td>${fq(a.pid,a.from)} → ${fq(a.pid,a.to)}</td></tr>`).join('')}</table></div>`:''}</div>`;
+}
+function saveBatch(id){
+ const b=S.batches.find(x=>x.id==id),q=Math.max(0,Math.floor(+val('xq')||0)),no=val('xb').trim(),e=val('xe');
+ if(!no||!e)return toast('ব্যাচ নম্বর ও মেয়াদ দিন');
+ if(q!=b.qty)(S.adj=S.adj||[]).unshift({date:today(),bid:id,pid:b.pid,from:b.qty,to:q});
+ b.no=no;b.exp=e;b.qty=q;editB=null;toast('সংশোধন হয়েছে');render();
+}
+function addProd(){
+ const name=val('nn').trim();if(!name)return toast('নাম দিন');
+ S.products.push({id:nid(),name,generic:val('ng'),company:val('nc'),unit:val('nu'),per:Math.max(1,Math.floor(+val('np'))||1),min:+val('nm')||0});
+ toast('পণ্য যোগ হয়েছে');render();
+}
+function due(){
+ const blk=(title,arr,kind)=>`<div class="card"><h2>${title}</h2><div class="tw"><table><tr><th>নাম</th><th>ফোন</th><th class="r">${kind=='c'?'বাকি':'পাওনা'}</th><th>${kind=='c'?'জমা নিন':'পরিশোধ'}</th></tr>
+ ${arr.map(x=>`<tr><td>${x.name}</td><td>${x.phone}</td><td class="r">${tk(x.due)}</td><td><div class="row" style="flex-wrap:nowrap"><input id="${kind}${x.id}" type="number" min="1" style="width:90px"><button class="btn alt" onclick="settle('${kind}',${x.id})">নিশ্চিত</button></div></td></tr>`).join('')}</table></div></div>`;
+ return blk('কাস্টমারের বাকি',S.customers,'c')+(role=='owner'?blk('সাপ্লায়ারের পাওনা',S.suppliers,'s'):'');
+}
+function settle(kind,id){
+ const a=+val(kind+id);if(!a)return toast('টাকার অঙ্ক দিন');
+ const x=(kind=='c'?S.customers:S.suppliers).find(y=>y.id==id);
+ x.due=Math.max(0,x.due-a);toast('হিসাবে যোগ হয়েছে');render();
+}
+function rep(){
+ const ts=S.sales.filter(s=>s.date==today());
+ const by=k=>ts.filter(s=>s.pay==k).reduce((a,s)=>a+s.total,0);
+ return `<div class="grid" style="margin-bottom:14px">
+ <div class="stat"><b>${tk(ts.reduce((a,s)=>a+s.total,0))}</b><span>আজকের মোট বিক্রি</span></div>
+ <div class="stat"><b>${tk(ts.reduce((a,s)=>a+s.profit,0))}</b><span>আজকের লাভ</span></div>
+ <div class="stat"><b>${tk(by('cash')+by('bkash')+by('nagad'))}</b><span>নগদ ও মোবাইল পেমেন্ট</span></div>
+ <div class="stat"><b>${tk(by('due'))}</b><span>আজকের বাকি</span></div></div>
+ <div class="card"><h2>আজকের বিল</h2>${ts.length?`<div class="tw"><table><tr><th>বিল</th><th>আইটেম</th><th>পেমেন্ট</th><th class="r">মোট</th></tr>${ts.map(s=>`<tr><td>#${bn(s.id)}</td><td>${s.items.map(i=>P(i.pid).name+' ×'+fq(i.pid,i.qty)).join(', ')}</td><td>${{cash:'নগদ',bkash:'বিকাশ',nagad:'নগদ (Nagad)',due:'বাকি'}[s.pay]}</td><td class="r">${tk(s.total)}</td></tr>`).join('')}</table></div>`:'<p class="note">আজ এখনো কোনো বিল হয়নি।</p>'}</div>
+ <div class="card"><button class="btn alt" onclick="if(confirm('নমুনা ডাটায় ফিরে যাবেন?')){S=seed();cart=[];render()}">নমুনা ডাটা রিসেট</button></div>`;
+}
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>রেস্টুরেন্ট ইনভেন্টরি (প্রোটোটাইপ)</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f6f5;--card:#fff;--ink:#14282a;--mute:#5d7274;--line:#dbe4e2;--brand:#0f6b63;--brand-ink:#fff;--warn:#b45309;--warnbg:#fef3c7;--bad:#b42318;--badbg:#fee4e2;--ok:#157347;--okbg:#dcf5e7;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1a1b;--card:#162526;--ink:#e6f0ee;--mute:#92aaa8;--line:#274142;--brand:#3fb5a8;--brand-ink:#06201d;--warn:#fbbf24;--warnbg:#3a2c0a;--bad:#ff8a80;--badbg:#3d1714;--ok:#6ee7a0;--okbg:#10301f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1a1b;--card:#162526;--ink:#e6f0ee;--mute:#92aaa8;--line:#274142;--brand:#3fb5a8;--brand-ink:#06201d;--warn:#fbbf24;--warnbg:#3a2c0a;--bad:#ff8a80;--badbg:#3d1714;--ok:#6ee7a0;--okbg:#10301f;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Hind Siliguri",system-ui,sans-serif}
+header{background:var(--brand);color:var(--brand-ink);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+header h1{font-size:19px;margin:0}
+header small{opacity:.85}
+nav{display:flex;gap:4px;overflow-x:auto;padding:8px 10px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+nav button{flex:none;border:0;background:none;color:var(--mute);font:inherit;font-weight:500;padding:8px 14px;border-radius:8px;cursor:pointer}
+nav button.on{background:var(--brand);color:var(--brand-ink)}
+main{max-width:980px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+h2{font-size:17px;margin:0 0 10px}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.stat{padding:12px;border:1px solid var(--line);border-radius:8px}
+.stat b{display:block;font-size:24px}
+.stat span{color:var(--mute);font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+label{display:flex;flex-direction:column;font-size:13px;color:var(--mute);gap:2px;flex:1;min-width:120px}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
+.btn{border:0;background:var(--brand);color:var(--brand-ink);font:inherit;font-weight:600;padding:9px 16px;border-radius:8px;cursor:pointer}
+.btn.alt{background:none;border:1px solid var(--line);color:var(--ink)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mute);font-weight:500;font-size:13px}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:13px;font-weight:500}
+.tag.w{background:var(--warnbg);color:var(--warn)}.tag.b{background:var(--badbg);color:var(--bad)}.tag.g{background:var(--okbg);color:var(--ok)}
+.r{text-align:right}
+.total{font-size:22px;font-weight:700}
+.note{color:var(--mute);font-size:14px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+#toast.on{opacity:1}
+@media print{body *{visibility:hidden}#rc,#rc *{visibility:visible}#rc{position:absolute;left:0;top:0;width:100%;border:0}.noprint{display:none}}
+</style>
+</head>
+<body>
+<header><h1>রেস্টুরেন্ট ইনভেন্টরি</h1><small>প্রোটোটাইপ, নমুনা ডাটা</small></header>
+<nav id="nav"></nav>
+<main id="app"></main>
+<div id="toast"></div>
+<script>
+const KEY='rest_proto_v1';
+const D=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const seed=()=>({ing:[
+{id:1,name:'চাল',unit:'কেজি',per:1000,cost:65,stock:20000,min:5000,exp:D(200)},
+{id:2,name:'মুরগি',unit:'কেজি',per:1000,cost:220,stock:6000,min:5000,exp:D(2)},
+{id:3,name:'সয়াবিন তেল',unit:'লিটার',per:1000,cost:170,stock:5000,min:2000,exp:D(120)},
+{id:4,name:'পেঁয়াজ',unit:'কেজি',per:1000,cost:70,stock:8000,min:3000,exp:D(6)},
+{id:5,name:'ডিম',unit:'পিস',per:1,cost:13,stock:60,min:30,exp:D(10)}],
+dishes:[
+{id:1,name:'চিকেন বিরিয়ানি',price:220,rec:[{i:1,q:150},{i:2,q:200},{i:3,q:30},{i:4,q:50}]},
+{id:2,name:'ডিম ভুনা',price:60,rec:[{i:5,q:2},{i:3,q:10},{i:4,q:30}]},
+{id:3,name:'সাদা ভাত',price:30,rec:[{i:1,q:120}]}],
+sales:[],waste:[],nid:100});
+let S;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!S||!S.ing)S=seed();
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const nid=()=>S.nid++;
+const bn=n=>Number(n||0).toLocaleString('bn-BD',{maximumFractionDigits:1});
+const tk=n=>'৳'+bn(n);
+const today=()=>new Date().toISOString().slice(0,10);
+const days=e=>Math.round((new Date(e)-new Date(today()))/864e5);
+const ig=id=>S.ing.find(g=>g.id==id);
+const dh=id=>S.dishes.find(d=>d.id==id);
+const dcost=d=>d.rec.reduce((a,r)=>a+r.q*ig(r.i).cost/ig(r.i).per,0);
+const sub=g=>g.unit=='কেজি'?'গ্রাম':g.unit=='লিটার'?'মিলি':g.unit;
+const fq=(g,n)=>{if(g.per==1)return bn(n)+' '+g.unit;const s=Math.floor(n/g.per),r=n%g.per;return (s?bn(s)+' '+g.unit:'')+(s&&r?' ':'')+(r?bn(r)+' '+sub(g):'')||'০'};
+const expTag=e=>{const d=days(e);return d<0?'<span class="tag b">নষ্ট হয়ে গেছে</span>':d<=3?`<span class="tag b">${bn(d)} দিন বাকি</span>`:d<=7?`<span class="tag w">${bn(d)} দিন বাকি</span>`:'<span class="tag g">ঠিক আছে</span>'};
+const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2200)};
+const opts=(arr,f)=>arr.map(x=>`<option value="${x.id}">${f(x)}</option>`).join('');
+const val=id=>document.getElementById(id).value;
+let tab='dash',cart=[],last=null;
+const tabs=[['dash','ড্যাশবোর্ড'],['pos','অর্ডার'],['stk','উপকরণ ও অপচয়'],['menu','মেনু ও রেসিপি'],['rep','রিপোর্ট']];
+function go(t){tab=t;render()}
+function render(){
+ document.getElementById('nav').innerHTML=tabs.map(([k,v])=>`<button class="${k==tab?'on':''}" onclick="go('${k}')">${v}</button>`).join('');
+ document.getElementById('app').innerHTML=({dash,pos,stk,menu,rep})[tab]();
+ save();
+}
+function dash(){
+ const ts=S.sales.filter(s=>s.date==today());
+ const rev=ts.reduce((a,s)=>a+s.total,0),cs=ts.reduce((a,s)=>a+s.cost,0);
+ const low=S.ing.filter(g=>g.stock<=g.min),soon=S.ing.filter(g=>g.stock>0&&days(g.exp)<=7);
+ return `<div class="grid" style="margin-bottom:14px">
+ <div class="stat"><b>${tk(rev)}</b><span>আজকের বিক্রি</span></div>
+ <div class="stat"><b>${tk(rev-cs)}</b><span>আজকের লাভ (উপকরণ বাদে)</span></div>
+ <div class="stat"><b>${rev?bn(cs/rev*100)+'%':'-'}</b><span>খাবারের খরচের হার</span></div>
+ <div class="stat"><b>${bn(low.length)}</b><span>স্টক কম উপকরণ</span></div></div>
+ <div class="card"><h2>স্টক কম</h2>${low.length?`<div class="tw"><table><tr><th>উপকরণ</th><th class="r">আছে</th><th class="r">সর্বনিম্ন</th></tr>${low.map(g=>`<tr><td>${g.name}</td><td class="r">${fq(g,g.stock)}</td><td class="r">${fq(g,g.min)}</td></tr>`).join('')}</table></div>`:'<p class="note">সব উপকরণের স্টক ঠিক আছে।</p>'}</div>
+ <div class="card"><h2>দ্রুত নষ্ট হতে পারে</h2>${soon.length?`<div class="tw"><table><tr><th>উপকরণ</th><th>মেয়াদ</th><th></th></tr>${soon.map(g=>`<tr><td>${g.name}</td><td>${g.exp}</td><td>${expTag(g.exp)}</td></tr>`).join('')}</table></div>`:'<p class="note">কিছু নেই।</p>'}</div>`;
+}
+function slip(){
+ if(!last)return '';
+ return `<div class="card" id="rc"><h2>কিচেন স্লিপ #${bn(last.id)}</h2><p class="note">${{dine:'টেবিল',take:'টেকঅ্যাওয়ে',del:'ডেলিভারি'}[last.type]}${last.tbl?' '+last.tbl:''} | ${last.date}</p><div class="tw"><table>${last.items.map(i=>`<tr><td>${dh(i.did).name}</td><td class="r">× ${bn(i.qty)}</td><td class="r">${tk(i.qty*i.price)}</td></tr>`).join('')}</table></div><p class="total">মোট: ${tk(last.total)}</p><div class="row noprint"><button class="btn" onclick="window.print()">স্লিপ প্রিন্ট</button><button class="btn alt" onclick="last=null;render()">বন্ধ করুন</button></div></div>`;
+}
+function pos(){
+ const total=cart.reduce((a,c)=>a+c.qty*c.price,0);
+ return slip()+`<div class="card"><h2>নতুন অর্ডার</h2><div class="row">
+ <label>আইটেম<select id="pd">${opts(S.dishes,d=>d.name+' ('+tk(d.price)+')')}</select></label>
+ <label>পরিমাণ<input id="pq" type="number" min="1" value="1"></label>
+ <button class="btn" onclick="addCart()">যোগ করুন</button></div></div>
+ <div class="card"><h2>অর্ডারের তালিকা</h2>${cart.length?`<div class="tw"><table><tr><th>আইটেম</th><th class="r">পরিমাণ</th><th class="r">মোট</th><th></th></tr>${cart.map((c,i)=>`<tr><td>${dh(c.did).name}</td><td class="r">${bn(c.qty)}</td><td class="r">${tk(c.qty*c.price)}</td><td><button class="btn alt" onclick="cart.splice(${i},1);render()">বাদ দিন</button></td></tr>`).join('')}</table></div>
+ <p class="total">মোট: ${tk(total)}</p><div class="row"><label>ধরন<select id="ot"><option value="dine">টেবিল</option><option value="take">টেকঅ্যাওয়ে</option><option value="del">ডেলিভারি</option></select></label>
+ <label>টেবিল নম্বর<input id="tb"></label><button class="btn" onclick="checkout()">অর্ডার নিন</button></div>`:'<p class="note">আইটেম যোগ করে অর্ডার শুরু করুন।</p>'}</div>`;
+}
+function addCart(){
+ const did=+val('pd'),qty=Math.floor(+val('pq'));
+ if(!did||qty<1)return toast('আইটেম ও পরিমাণ দিন');
+ const ex=cart.find(c=>c.did==did);
+ if(ex)ex.qty+=qty;else cart.push({did,qty,price:dh(did).price});
+ render();
+}
+function checkout(){
+ const need={};
+ cart.forEach(c=>dh(c.did).rec.forEach(r=>need[r.i]=(need[r.i]||0)+r.q*c.qty));
+ for(const i in need){if(ig(i).stock<need[i])return toast(ig(i).name+' যথেষ্ট নেই, আছে '+fq(ig(i),ig(i).stock))}
+ let cost=0;for(const i in need){ig(i).stock-=need[i];cost+=need[i]*ig(i).cost/ig(i).per}
+ const total=cart.reduce((a,c)=>a+c.qty*c.price,0);
+ S.sales.unshift({id:nid(),date:today(),items:cart.map(c=>({...c})),total,cost,type:val('ot'),tbl:val('tb')});
+ last=S.sales[0];cart=[];toast('অর্ডার হয়েছে, উপকরণ কমেছে');render();
+}
+function stk(){
+ const gl=S.ing.map(g=>`<option value="${g.id}">${g.name} (${g.unit})</option>`).join('');
+ return `<div class="card"><h2>উপকরণের স্টক</h2><div class="tw"><table><tr><th>উপকরণ</th><th class="r">আছে</th><th class="r">দাম/${'একক'}</th><th>মেয়াদ</th></tr>${S.ing.map(g=>`<tr><td>${g.name}</td><td class="r">${fq(g,g.stock)}</td><td class="r">${tk(g.cost)}/${g.unit}</td><td>${g.exp} ${expTag(g.exp)}</td></tr>`).join('')}</table></div></div>
+ <div class="card"><h2>বাজার করা (স্টক ইন)</h2><div class="row"><label>উপকরণ<select id="bi">${gl}</select></label>
+ <label>পরিমাণ (কেজি/লিটার/পিস)<input id="bq" type="number" min="0" step="any"></label>
+ <label>মোট দাম (৳)<input id="bt" type="number" min="0"></label>
+ <label>মেয়াদ (ঐচ্ছিক)<input id="be" type="date"></label>
+ <button class="btn" onclick="doBuy()">স্টকে তুলুন</button></div></div>
+ <div class="card"><h2>অপচয় লিখুন</h2><div class="row"><label>উপকরণ<select id="wi">${gl}</select></label>
+ <label>পরিমাণ (গ্রাম/মিলি/পিস)<input id="wq" type="number" min="1"></label>
+ <label>কারণ<select id="wr"><option>নষ্ট হয়েছে</option><option>পড়ে গেছে</option><option>মেয়াদ শেষ</option><option>ফেরত এসেছে</option></select></label>
+ <button class="btn" onclick="doWaste()">অপচয় লিখুন</button></div></div>
+ <div class="card"><h2>নতুন উপকরণ</h2><div class="row"><label>নাম<input id="ni"></label>
+ <label>একক<select id="nu"><option>কেজি</option><option>লিটার</option><option>পিস</option></select></label>
+ <label>সর্বনিম্ন স্টক (গ্রাম/মিলি/পিস)<input id="nm" type="number" value="1000"></label>
+ <button class="btn" onclick="addIng()">যোগ করুন</button></div></div>`;
+}
+function doBuy(){
+ const g=ig(val('bi')),q=+val('bq'),t=+val('bt');
+ if(!(q>0)||!(t>0))return toast('পরিমাণ ও দাম দিন');
+ const old=g.stock*g.cost/g.per,ns=g.stock+q*g.per;
+ g.cost=(old+t)/ns*g.per;g.stock=ns;
+ if(val('be'))g.exp=val('be');
+ toast('স্টকে যোগ হয়েছে');render();
+}
+function doWaste(){
+ const g=ig(val('wi')),q=Math.floor(+val('wq'));
+ if(q<1)return toast('পরিমাণ দিন');
+ if(q>g.stock)return toast('স্টকে মাত্র '+fq(g,g.stock)+' আছে');
+ g.stock-=q;S.waste.unshift({date:today(),i:g.id,q,why:val('wr')});
+ toast('অপচয় লেখা হয়েছে');render();
+}
+function addIng(){
+ const n=val('ni').trim();if(!n)return toast('নাম দিন');
+ const u=val('nu');
+ S.ing.push({id:nid(),name:n,unit:u,per:u=='পিস'?1:1000,cost:0,stock:0,min:+val('nm')||0,exp:D(30)});
+ toast('উপকরণ যোগ হয়েছে');render();
+}
+function menu(){
+ const sel=n=>`<label>উপকরণ ${bn(n)}<select id="ri${n}"><option value="">-</option>${opts(S.ing,g=>g.name+' ('+sub(g)+')')}</select></label><label>পরিমাণ<input id="rq${n}" type="number" min="0"></label>`;
+ return `<div class="card"><h2>মেনু ও রেসিপি</h2><div class="tw"><table><tr><th>আইটেম</th><th class="r">দাম</th><th class="r">খরচ</th><th class="r">লাভ</th><th>রেসিপি</th></tr>${S.dishes.map(d=>{const c=dcost(d);return `<tr><td>${d.name}</td><td class="r">${tk(d.price)}</td><td class="r">${tk(c)}</td><td class="r">${tk(d.price-c)} (${bn((d.price-c)/d.price*100)}%)</td><td>${d.rec.map(r=>ig(r.i).name+' '+bn(r.q)+' '+sub(ig(r.i))).join(', ')}</td></tr>`}).join('')}</table></div></div>
+ <div class="card"><h2>নতুন আইটেম</h2><div class="row"><label>নাম<input id="dn"></label><label>বিক্রির দাম<input id="dp" type="number" min="0"></label></div>
+ <div class="row" style="margin-top:8px">${sel(1)}</div><div class="row" style="margin-top:8px">${sel(2)}</div><div class="row" style="margin-top:8px">${sel(3)}</div>
+ <p class="note">পরিমাণ লিখুন গ্রাম, মিলি বা পিসে (একটা প্লেটে যা লাগে)।</p><button class="btn" onclick="addDish()">আইটেম যোগ করুন</button></div>`;
+}
+function addDish(){
+ const n=val('dn').trim(),p=+val('dp'),rec=[];
+ for(let k=1;k<=3;k++){const i=+val('ri'+k),q=+val('rq'+k);if(i&&q>0)rec.push({i,q})}
+ if(!n||!(p>0)||!rec.length)return toast('নাম, দাম ও অন্তত একটা উপকরণ দিন');
+ S.dishes.push({id:nid(),name:n,price:p,rec});toast('আইটেম যোগ হয়েছে');render();
+}
+function rep(){
+ const ts=S.sales.filter(s=>s.date==today());
+ const rev=ts.reduce((a,s)=>a+s.total,0),cs=ts.reduce((a,s)=>a+s.cost,0);
+ const wv=S.waste.filter(w=>w.date==today()).reduce((a,w)=>a+w.q*ig(w.i).cost/ig(w.i).per,0);
+ const m={};ts.forEach(s=>s.items.forEach(i=>{const d=dh(i.did),x=m[i.did]||(m[i.did]={n:d.name,q:0,r:0,c:0});x.q+=i.qty;x.r+=i.qty*i.price;x.c+=i.qty*dcost(d)}));
+ const rows=Object.values(m);
+ return `<div class="grid" style="margin-bottom:14px">
+ <div class="stat"><b>${tk(rev)}</b><span>আজকের বিক্রি</span></div>
+ <div class="stat"><b>${tk(rev-cs)}</b><span>বিক্রি থেকে লাভ</span></div>
+ <div class="stat"><b>${tk(wv)}</b><span>আজকের অপচয়ের ক্ষতি</span></div>
+ <div class="stat"><b>${tk(rev-cs-wv)}</b><span>অপচয় বাদে লাভ</span></div></div>
+ <div class="card"><h2>আইটেম অনুযায়ী</h2>${rows.length?`<div class="tw"><table><tr><th>আইটেম</th><th class="r">বিক্রি</th><th class="r">টাকা</th><th class="r">লাভ</th></tr>${rows.map(x=>`<tr><td>${x.n}</td><td class="r">${bn(x.q)}</td><td class="r">${tk(x.r)}</td><td class="r">${tk(x.r-x.c)}</td></tr>`).join('')}</table></div>`:'<p class="note">আজ এখনো কোনো অর্ডার হয়নি।</p>'}</div>
+ <div class="card"><h2>সাম্প্রতিক অপচয়</h2>${S.waste.length?`<div class="tw"><table><tr><th>তারিখ</th><th>উপকরণ</th><th class="r">পরিমাণ</th><th>কারণ</th></tr>${S.waste.slice(0,8).map(w=>`<tr><td>${w.date}</td><td>${ig(w.i).name}</td><td class="r">${fq(ig(w.i),w.q)}</td><td>${w.why}</td></tr>`).join('')}</table></div>`:'<p class="note">কোনো অপচয় লেখা নেই।</p>'}</div>
+ <div class="card"><button class="btn alt" onclick="S=seed();cart=[];last=null;render()">নমুনা ডাটা রিসেট</button></div>`;
+}
+render();
+</script>
+</body>
+</html>
