@@ -180,23 +180,24 @@ CREATE VIEW supplier_balance AS
   FROM suppliers s;
 
 -- FEFO SALE: takes stock from the batch that expires first, skips expired
--- batches, returns the total cost of what was taken (for profit reports).
--- Call it once per sale item, inside the same transaction that inserts the sale.
-CREATE FUNCTION sell_fefo(p_sale_id bigint, p_product_id bigint, p_qty numeric, p_user bigint)
-RETURNS numeric AS $$
+-- batches, and returns the cost and the revenue (at each batch's own sell price)
+-- of what was taken. create_sale() in logic.sql calls it once per product.
+CREATE FUNCTION sell_fefo(p_sale_id bigint, p_product_id bigint, p_qty numeric, p_user bigint,
+                          OUT o_cost numeric, OUT o_revenue numeric)
+AS $$
 DECLARE
   need numeric := p_qty;
   take numeric;
-  cost_total numeric := 0;
   v_shop bigint;
   r record;
 BEGIN
+  o_cost := 0; o_revenue := 0;
   IF p_qty <= 0 THEN RAISE EXCEPTION 'quantity must be positive'; END IF;
   SELECT shop_id INTO v_shop FROM products WHERE id = p_product_id;
   -- lock this product's batches so two sellers cannot take the same stock
   PERFORM 1 FROM batches WHERE product_id = p_product_id FOR UPDATE;
   FOR r IN
-    SELECT b.id, b.cost_price, COALESCE(s.qty, 0) AS qty
+    SELECT b.id, b.cost_price, b.sell_price, COALESCE(s.qty, 0) AS qty
     FROM batches b LEFT JOIN batch_stock s ON s.batch_id = b.id
     WHERE b.product_id = p_product_id
       AND (b.expiry_date IS NULL OR b.expiry_date >= current_date)
@@ -207,19 +208,14 @@ BEGIN
     take := LEAST(r.qty, need);
     INSERT INTO stock_movements (shop_id, product_id, batch_id, qty, kind, ref_type, ref_id, user_id)
     VALUES (v_shop, p_product_id, r.id, -take, 'sale', 'sale', p_sale_id, p_user);
-    cost_total := cost_total + take * r.cost_price;
+    o_cost := o_cost + take * r.cost_price;
+    o_revenue := o_revenue + take * r.sell_price;
     need := need - take;
   END LOOP;
   IF need > 0 THEN
     RAISE EXCEPTION 'insufficient sellable stock for product %', p_product_id;
   END IF;
-  RETURN cost_total;
 END $$ LANGUAGE plpgsql;
 
--- Example (run after inserting a shop, user, product, batch and a purchase movement):
---   BEGIN;
---   INSERT INTO sales (shop_id, client_uuid, total, paid, payment_method, created_by)
---     VALUES (1, gen_random_uuid(), 30, 30, 'cash', 1) RETURNING id;   -- say id = 1
---   SELECT sell_fefo(1, 1, 3, 1);          -- sell 3 base units of product 1
---   COMMIT;
---   SELECT * FROM product_stock;
+-- Next: run logic.sql (create_sale, create_purchase, adjust_stock, record_payment),
+-- then test.sql to check everything.
