@@ -6,9 +6,11 @@
 
 - `schema.sql`: PostgreSQL স্কিমা (স্টক লেজার, FEFO ফাংশন, ভিউ)
 - `logic.sql`: কেনা, বিক্রি, স্টক সংশোধন ও পেমেন্টের ফাংশন (প্রতিটা একটা ট্রানজেকশন)
+- `sync.sql`: অফলাইন বিলের ফাংশন (`sync_sale`, `sync_payment`) ও স্কিমায় বাড়তি কলাম
+- `test_sync.sql`: সিংকের যাচাই, শেষে `ALL SYNC TESTS PASSED` দেখালে ঠিক আছে
 - `test.sql`: যাচাইয়ের স্ক্রিপ্ট। শেষে `ALL TESTS PASSED` দেখালে ঠিক আছে। শেষে সব রোলব্যাক হয়
 
-চালানোর ক্রম: `schema.sql`, তারপর `logic.sql`, তারপর `test.sql`। এগুলো এখনো আসল PostgreSQL-এ চালিয়ে পরীক্ষা করা হয়নি।
+চালানোর ক্রম: `schema.sql`, `logic.sql`, `test.sql`, তারপর `sync.sql`, `test_sync.sql`। এগুলো এখনো আসল PostgreSQL-এ চালিয়ে পরীক্ষা করা হয়নি।
 - `docs/sync-design.md`: অফলাইন সিংকের নকশা
 - `prototypes/`: তিনটা ব্রাউজার প্রোটোটাইপ (নমুনা ডাটা, ডাটা শুধু ব্রাউজারে থাকে)
   - `pharmacy-inventory.html`: ব্যাচ, মেয়াদ, FEFO, স্ট্রিপ ভেঙে পিস, রোল (PIN ১২৩৪)
